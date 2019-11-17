@@ -59,6 +59,35 @@ var MIN_FLIGHT_INTERVAL = 90000;
 // API URL
 var API_URL = 'https://api-tokyochallenge.odpt.org/api/v4/';
 
+var OPERATORS_FOR_TRAININFORMATION = [
+	'JR-East',
+	'TWR',
+	'TokyoMetro',
+	'Toei',
+	'YokohamaMunicipal',
+	'Keio'
+];
+
+var OPERATORS_FOR_TRAINS = [
+// Data is unavailable between December 24 and late January
+//	'JR-East',
+	'TokyoMetro',
+	'Toei'
+];
+
+var OPERATORS_FOR_FLIGHTINFORMATION = [
+	'HND-JAT',
+	'HND-TIAT',
+	'NAA'
+];
+
+var RAILWAY_SOBURAPID = 'JR-East.SobuRapid';
+
+var TRAINTYPES_FOR_SOBURAPID = [
+	'JR-East.Rapid',
+	'JR-East.LimitedExpress'
+];
+
 var SQRT3 = Math.sqrt(3);
 var DEGREE_TO_RADIAN = Math.PI / 180;
 
@@ -1499,8 +1528,8 @@ map.once('styledata', function () {
 	}
 
 	function adjustTrainID(id, type) {
-		if (type === 'JR-East.Rapid' || type === 'JR-East.LimitedExpress') {
-			return id.replace(/JR-East\.(NaritaAirportBranch|Narita|Sobu)/, 'JR-East.SobuRapid');
+		if (TRAINTYPES_FOR_SOBURAPID.indexOf(type) !== -1) {
+			return id.replace(/JR-East\.(NaritaAirportBranch|Narita|Sobu)/, RAILWAY_SOBURAPID);
 		}
 		return id;
 	}
@@ -1516,10 +1545,12 @@ map.once('styledata', function () {
 
 	function loadRealtimeTrainData() {
 		Promise.all([
-			loadJSON(API_URL + 'odpt:TrainInformation?odpt:operator=odpt.Operator:JR-East,odpt.Operator:TWR,odpt.Operator:TokyoMetro,odpt.Operator:Toei,odpt.Operator:YokohamaMunicipal,odpt.Operator:Keio'),
-// Data is unavailable between December 24 and late January
-//			loadJSON(API_URL + 'odpt:Train?odpt:operator=odpt.Operator:JR-East,odpt.Operator:TokyoMetro,odpt.Operator:Toei')
-			loadJSON(API_URL + 'odpt:Train?odpt:operator=odpt.Operator:TokyoMetro,odpt.Operator:Toei')
+			loadJSON(API_URL + 'odpt:TrainInformation?odpt:operator=' + OPERATORS_FOR_TRAININFORMATION.map(function(operator) {
+				return 'odpt.Operator:' + operator;
+			}).join(',')),
+			loadJSON(API_URL + 'odpt:Train?odpt:operator=' + OPERATORS_FOR_TRAINS.map(function(operator) {
+				return 'odpt.Operator:' + operator;
+			}).join(','))
 		]).then(function([trainInfoRefData, trainRefData]) {
 			realtimeTrainLookup = {};
 
@@ -1572,9 +1603,7 @@ map.once('styledata', function () {
 
 				// Train information text is provided in Japanese only
 				if (railwayID && status && status.ja &&
-// Data is unavailable between December 24 and late January
-//					(operatorID === 'JR-East' || operatorID === 'TokyoMetro' || operatorID === 'Toei') &&
-					(operatorID === 'TokyoMetro' || operatorID === 'Toei') &&
+					OPERATORS_FOR_TRAINS.indexOf(operatorID) !== -1 &&
 					(status.ja.indexOf('見合わせ') !== -1 ||
 					status.ja.indexOf('折返し運転') !== -1 ||
 					status.ja.indexOf('運休') !== -1 ||
@@ -1598,8 +1627,12 @@ map.once('styledata', function () {
 
 	function loadRealtimeFlightData() {
 		Promise.all([
-			loadJSON(API_URL + 'odpt:FlightInformationArrival?odpt:operator=odpt.Operator:NAA,odpt.Operator:HND-JAT,odpt.Operator:HND-TIAT'),
-			loadJSON(API_URL + 'odpt:FlightInformationDeparture?odpt:operator=odpt.Operator:NAA,odpt.Operator:HND-JAT,odpt.Operator:HND-TIAT')
+			loadJSON(API_URL + 'odpt:FlightInformationArrival?odpt:operator=' + OPERATORS_FOR_FLIGHTINFORMATION.map(function(operator) {
+				return 'odpt.Operator:' + operator;
+			}).join(',')),
+			loadJSON(API_URL + 'odpt:FlightInformationDeparture?odpt:operator=' + OPERATORS_FOR_FLIGHTINFORMATION.map(function(operator) {
+				return 'odpt.Operator:' + operator;
+			}).join(','))
 		]).then(function(flightRefData) {
 			var flightQueue = {};
 
