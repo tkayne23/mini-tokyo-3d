@@ -785,7 +785,7 @@ map.once('styledata', function () {
 		eventHandler: function() {
 			isRealtime = !isRealtime;
 			this.title = dict[(isRealtime ? 'exit' : 'enter') + '-realtime'];
-			stopAllTrains();
+			stopAll();
 			trackedObject = undefined;
 			popup.remove();
 			stopViewAnimation();
@@ -972,19 +972,14 @@ map.once('styledata', function () {
 
 				// Remove all trains if the page has been invisible for more than ten seconds
 				if (now - lastFrameRefresh >= 10000) {
-					stopAllTrains();
+					stopAll();
 				}
 				lastFrameRefresh = now;
 
 				if (Math.floor((now - MIN_DELAY) / TRAIN_REFRESH_INTERVAL) !== Math.floor(lastTrainRefresh / TRAIN_REFRESH_INTERVAL)) {
-					refreshTrains();
-					refreshFlights();
 					loadRealtimeTrainData();
 					loadRealtimeFlightData();
 					refreshStyleColors();
-					setInterval(function() {
-						refreshDelayMarkers();
-					}, 500);
 					lastTrainRefresh = now - MIN_DELAY;
 				}
 				if (markedObject) {
@@ -1523,7 +1518,7 @@ map.once('styledata', function () {
 		delete activeFlightLookup[flight.id];
 	}
 
-	function stopAllTrains() {
+	function stopAll() {
 		Object.keys(activeTrainLookup).forEach(function(key) {
 			stopTrain(activeTrainLookup[key]);
 		});
@@ -1627,7 +1622,10 @@ map.once('styledata', function () {
 			});
 
 			refreshTrains();
+			refreshDelayMarkers();
 			updateAboutPopup();
+		}).catch(function() {
+			refreshTrains();
 		});
 	}
 
@@ -1759,6 +1757,8 @@ map.once('styledata', function () {
 				});
 			});
 
+			refreshFlights();
+		}).catch(function() {
 			refreshFlights();
 		});
 	}
