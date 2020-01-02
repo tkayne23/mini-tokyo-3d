@@ -120,6 +120,7 @@ var lastStaticUpdate = '2020-01-06 10:00:00';
 var lastDynamicUpdate = {};
 var stationLookup, stationTitleLookup, railwayLookup, railDirectionLookup, trainTypeLookup, trainLookup, operatorLookup, airportLookup, a;
 var trackedObject, markedObject, lastTimetableRefresh, lastTrainRefresh, lastFrameRefresh, trackingBaseBearing, viewAnimationID, layerZoom, altitudeUnit, objectUnit, objectScale, carScale, aircraftScale;
+var flightPattern, lastFlightPatternChanged;
 var lastNowCastRefresh, nowCastData, fgGroup, imGroup, bgGroup;
 
 // Replace MapboxLayer.render to support underground rendering
@@ -1703,10 +1704,19 @@ if (isNaN(coord[0]) || isNaN(coord[1])) {
 		]).then(function([atisData, arrivalData, departureData]) {
 			var landing = atisData.landing;
 			var departure = atisData.departure;
+			var pattern = landing.join('/') + ' ' + departure.join('/');
 			var arr = {};
 			var depRoutes = {};
 			var north = true;
 			var flightQueue = {};
+
+			if (flightPattern !== pattern) {
+				flightPattern = pattern;
+				lastFlightPatternChanged = Date.now();
+				Object.keys(activeFlightLookup).forEach(function(key) {
+					stopFlight(activeFlightLookup[key]);
+				});
+			}
 
 			if (includes(landing, ['L22', 'L23'])) { // South wind, good weather
 				arrRoutes = {S: 'L23', N: 'L22'};
@@ -1836,6 +1846,10 @@ if (isNaN(coord[0]) || isNaN(coord[1])) {
 				}
 				flight.maxSpeed = maxSpeed;
 				flight.acceleration = acceleration;
+
+				if (flight.base < lastFlightPatternChanged) {
+					return;
+				}
 
 				queue = flightQueue[flight.runway] = flightQueue[flight.runway] || [];
 				queue.push(flight);
