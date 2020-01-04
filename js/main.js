@@ -1286,6 +1286,9 @@ if (isNaN(coord[0]) || isNaN(coord[1])) {
 
 					if (arrivalTime) {
 						duration = getTime(arrivalTime) - getTime(train.departureTime);
+						if (!(duration > 0)) {
+							duration = undefined;
+						}
 					}
 					setTrainStandingStatus(train, false);
 					train.animationID = startTrainAnimation(function(t) {
